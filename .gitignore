@@ -1,6 +1,8 @@
 node_modules
 .env
 
+
+.qodo
 # Hardhat files
 /cache
 /artifacts
