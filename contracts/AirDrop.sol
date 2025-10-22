@@ -18,18 +18,18 @@ contract AirDrop is Ownable {
         merkleRoot = root;
     }
 
-    // 🔧 Nếu cần đổi root (trong trường hợp thay whitelist)
+    // Nếu cần đổi root (trong trường hợp thay whitelist)
     function setMerkleRoot(bytes32 root) external onlyOwner {
         merkleRoot = root;
         emit MerkleRootUpdated(root);
     }
 
-    // 🎁 Người dùng claim token nếu nằm trong whitelist
+    // Người dùng claim token nếu nằm trong whitelist
     function claim(uint256 amount, bytes32[] calldata proof) external {
         require(!claimed[msg.sender], "Already claimed");
         require(merkleRoot != bytes32(0), "Merkle root not set");
 
-        // Tạo leaf (ph��i trùng với off-chain)
+        // Tạo leaf 
         bytes32 leaf = keccak256(abi.encodePacked(msg.sender, amount));
         require(MerkleProof.verify(proof, merkleRoot, leaf), "Invalid proof");
 
