@@ -1,83 +1,62 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import { ethers, upgrades } from "hardhat";
 import fs from 'fs';
+import { ethers } from "hardhat";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre;
+  const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
   console.log("====================");
   console.log(`Network: ${hre.network.name}`);
+  console.log(`Deployer: ${deployer}`);
   console.log("====================");
 
-  // Deploy MyMintableToken (non-upgradeable)
-  console.log("====================");
-  console.log("Deploy MyMintableToken Contract");
-  console.log("====================");
-
-  const MyMintableToken = await ethers.getContractFactory("MyMintableToken");
-  const myMintableToken = await MyMintableToken.deploy();
-  await myMintableToken.waitForDeployment();
-  const myMintableTokenAddress = await myMintableToken.getAddress();
-  console.log("MyMintableToken deployed to:", myMintableTokenAddress);
+  // Deploy MyMintableToken
+  const myMintableToken = await deploy("MyMintableToken", {
+    from: deployer,
+    log: true,
+    args: [],
+  });
+  console.log("MyMintableToken deployed to:", myMintableToken.address);
 
   // Load merkle root
-  const rootPath = './Merkle/root.json';
+  const rootPath = './scripts/Merkle/root.json';
   const rootData = fs.readFileSync(rootPath, 'utf8');
-  const merkleRoot = JSON.parse(rootData).root; 
+  const merkleRoot = JSON.parse(rootData).root;
 
-  // Deploy AirDrop as upgradeable
-  console.log("====================");
-  console.log("Deploy AirDrop Contract");
-  console.log("====================");
-
-  const AirDrop = await ethers.getContractFactory("AirDrop");
-  const airDrop = await upgrades.deployProxy(AirDrop, [myMintableTokenAddress, merkleRoot], {
-    initializer: 'initialize',
+  // Deploy AirDrop as an upgradeable contract
+  const airDrop = await deploy("AirDrop", {
+    from: deployer,
+    log: true,
+    proxy: {
+      proxyContract: "UUPS",
+      execute: {
+        init: {
+          methodName: "initialize",
+          args: [myMintableToken.address, merkleRoot],
+        },
+      },
+    },
   });
-  await airDrop.waitForDeployment();
-  const airDropAddress = await airDrop.getAddress();
-
-  console.log("AirDrop proxy deployed to:", airDropAddress);
+  console.log("AirDrop proxy deployed to:", airDrop.address);
 
   // Grant MINTER_ROLE to AirDrop contract
   console.log("====================");
   console.log("Granting MINTER_ROLE to AirDrop contract");
   console.log("====================");
-  const MINTER_ROLE = await myMintableToken.MINTER_ROLE();
-  const grantRoleTx = await myMintableToken.grantRole(MINTER_ROLE, airDropAddress);
-  await grantRoleTx.wait();
-  console.log(`MINTER_ROLE granted to ${airDropAddress}`);
   
-  // Verify implementations if on a network that supports it
-  if (hre.network.name !== "hardhat" && hre.network.name !== "localhost") {
-    console.log("====================");
-    console.log("Verifying contracts");
-    console.log("====================");
-    
-    try {
-      await hre.run("verify:verify", {
-        address: myMintableTokenAddress,
-        constructorArguments: [],
-      });
-      console.log("MyMintableToken verified");
-    } catch (e) {
-      console.log("Error verifying MyMintableToken:", e);
-    }
-
-    // Get the implementation address for AirDrop
-    const implAddress = await upgrades.erc1967.getImplementationAddress(airDropAddress);
-
-    try {
-      await hre.run("verify:verify", {
-        address: implAddress,
-        constructorArguments: [],
-      });
-      console.log("AirDrop implementation verified");
-    } catch (e) {
-      console.log("Error verifying AirDrop:", e);
-    }
+  const tokenContract = await ethers.getContractAt("MyMintableToken", myMintableToken.address);
+  const MINTER_ROLE = await tokenContract.MINTER_ROLE();
+  
+  const hasRole = await tokenContract.hasRole(MINTER_ROLE, airDrop.address);
+  if (!hasRole) {
+    const grantRoleTx = await tokenContract.grantRole(MINTER_ROLE, airDrop.address);
+    await grantRoleTx.wait();
+    console.log(`MINTER_ROLE granted to: ${airDrop.address}`);
+  } else {
+    console.log(`AirDrop contract already has MINTER_ROLE.`);
   }
 };
 
