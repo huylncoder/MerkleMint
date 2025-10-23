@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./MyMintableToken.sol";
 
-contract AirDrop is Ownable {
+contract AirDrop is AccessControl {
+    bytes32 public constant ROOT_SETTER_ROLE = keccak256("ROOT_SETTER_ROLE");
+
     bytes32 public merkleRoot;
     MyMintableToken public token;
     mapping(address => bool) public claimed;
@@ -13,18 +15,20 @@ contract AirDrop is Ownable {
     event MerkleRootUpdated(bytes32 newRoot);
     event Claimed(address indexed account, uint256 amount);
 
-    constructor(address tokenAddress, bytes32 root) Ownable(msg.sender) {
+    constructor(address tokenAddress, bytes32 root) {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ROOT_SETTER_ROLE, msg.sender);
         token = MyMintableToken(tokenAddress);
         merkleRoot = root;
     }
-
+    
     // Nếu cần đổi root (trong trường hợp thay whitelist)
-    function setMerkleRoot(bytes32 root) external onlyOwner {
+    function setMerkleRoot(bytes32 root) external onlyRole(ROOT_SETTER_ROLE) {
         merkleRoot = root;
         emit MerkleRootUpdated(root);
     }
 
-    // Người dùng claim token nếu nằm trong whitelist
+    // Người dùng claim token nằm trong whitelist
     function claim(uint256 amount, bytes32[] calldata proof) external {
         require(!claimed[msg.sender], "Already claimed");
         require(merkleRoot != bytes32(0), "Merkle root not set");
@@ -40,3 +44,4 @@ contract AirDrop is Ownable {
         emit Claimed(msg.sender, amount);
     }
 }
+

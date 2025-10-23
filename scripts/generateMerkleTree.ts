@@ -9,14 +9,9 @@ const whitelistPath = path.join(__dirname, "../Merkle/whitelist.json");
 const whitelist = JSON.parse(fs.readFileSync(whitelistPath, "utf8"));
 
 // Hàm tạo hash từ address và amount
-function hashToken(account: string, amount: string) {
-  return Buffer.from(
-    ethers.solidityPackedKeccak256(
-      ["address", "uint256"],
-      [account, amount]
-    ).slice(2),
-    'hex'
-  );
+function hashToken(address: string, amount: string) {
+  const hashHex = ethers.solidityPackedKeccak256(["address", "uint256"], [address, amount]);
+  return Buffer.from(hashHex.slice(2), "hex");
 }
 
 // Tạo danh sách các leaf nodes
