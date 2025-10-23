@@ -22,7 +22,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   console.log("====================");
   console.log("MyMintableToken deployed to:", myMintableToken.address);
   console.log("====================");
-  
+
   // Load merkle root
   const rootPath = './scripts/Merkle/root.json';
   const rootData = fs.readFileSync(rootPath, 'utf8');
@@ -41,6 +41,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         },
       },
     },
+    contract: "Airdrop",
+    autoMine: true,
+    skipIfAlreadyDeployed: true,
   });
   console.log("====================");
   console.log("AirDrop proxy deployed to:", airDrop.address);
