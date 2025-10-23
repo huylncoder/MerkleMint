@@ -30,6 +30,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   // Deploy AirDrop as an upgradeable contract
   const airDrop = await deploy("AirDrop", {
+    contract: "AirDrop",
     from: deployer,
     log: true,
     proxy: {
@@ -41,7 +42,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         },
       },
     },
-    contract: "Airdrop",
     autoMine: true,
     skipIfAlreadyDeployed: true,
   });

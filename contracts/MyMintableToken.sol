@@ -20,3 +20,5 @@ contract MyMintableToken is ERC20, AccessControl {
         _burn(from, amount);
     }
 }
+
+
