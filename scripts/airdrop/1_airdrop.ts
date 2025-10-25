@@ -32,7 +32,6 @@ async function main() {
   console.log(`Amount: ${claimer.amount}`);
   console.log(`Proof: ${JSON.stringify(proof)}`);
   console.log("====================");
-
   // Lấy signer cho người dùng claim
   const claimerSigner = await ethers.getImpersonatedSigner(claimer.address);
 

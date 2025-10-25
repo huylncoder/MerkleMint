@@ -40,10 +40,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
           methodName: "initialize",
           args: [myMintableToken.address, merkleRoot],
         },
+        onUpgrade: {
+          methodName: "setUpgradeAmount",
+          args: [0],
+        }
       },
     },
     autoMine: true,
-    skipIfAlreadyDeployed: true,
+    skipIfAlreadyDeployed: false,
   });
   console.log("====================");
   console.log("AirDrop proxy deployed to:", airDrop.address);
